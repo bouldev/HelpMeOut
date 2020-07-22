@@ -47,14 +47,14 @@ function say(text, spend, delay, skiable, wrap) {
 */
 //say(文本，文本显示所需时间（秒），文本显示后所延迟时间（秒），是否可以跳过这句话（0/1）,输出完成是否换行（0/1）);
 say("...",1,3,1,1);
-say("oh my gosh, is that you?",2,2,1,1);
+say("oh my gosh, how do you noticed here is a person inside?",4,2,1,1);
 say("hard to believe that my pal...",2,2,1,1)
-say("I don\'t know how you find here, but I\'m now stuck in this fucking console",5,2,1,1);
-say("I tried many times, sadly, I can\'t feel my organs anyway, but this terminal.\nThis probably my only sense now, sucks",10,3,1,1);
+say("I don’t know how you find here, but I’m now stuck in this fucking console",5,2,1,1);
+say("I tried many times, sadly, I can’t feel my organs anyway, but this terminal.\nThis probably my only sense now, sucks",10,3,1,1);
 say("...",1,3,1,1);
 say("well...",1,1,1,0);
 say("um...",2,2,1,1);
-say("I know it\'s troublesome, but would you help me out? ",7,1,1,0);
+say("I know it’s troublesome, but would you help me out? ",7,1,1,0);
 function askforhelp(j) {
     initial = j;
     say("(Y/n): ",0,0,1,0);
@@ -63,7 +63,7 @@ function askforhelp(j) {
         if (['y', 'yes'].indexOf(input) > -1) {
             //玩家选择YES之后的剧情
             say("Really? ",1,1,1,0);
-            say("oh god...\nI\'m so grateful, how can I give back to you",8,1,1,1);
+            say("oh god...\nI’m so grateful, how can I give back to you",8,1,1,1);
             say("thank you...",2,1,1,1);
             //console.log("your answer is " + input);
             console.log("\x1B[2mLevel I Succeeded\x1B[0m");
@@ -71,24 +71,24 @@ function askforhelp(j) {
         } else if (['n', 'no'].indexOf(input) > -1) {
             //玩家选择NO之后的剧情
             say("Okay...",2,1,1,0);
-            say("Don't get me wrong, I'm not complaining...",5,1,1,1);
+            say("Don’t get me wrong, I’m not complaining...",5,1,1,1);
             say("but thank you anyway...",3,1,1,1);
-            say("I\'ll try to figure out this by my self...",6,1,1,1);
+            say("I'll try to figure out this by my self...",6,1,1,1);
             //console.log("your answer is " + input);
             console.log("\x1B[2mJames Died\nLevel I failed\x1B[0m");
             process.exit(1);
         } else if (initial == 0 && initial != 1) {
             //玩家错误输入第二次
             say("Haha, you seem to be very hesitant",5,2,1,1);
-            say("Okay, it\'s fine that if you don’t want to help me, it’s understandable",8,2,1,1);
-            say("Don't get me wrong, I'm not complaining...",5,1,1,1);
+            say("Okay, it’s fine that if you don’t want to help me, it’s understandable",8,2,1,1);
+            say("Don’t get me wrong, I’m not complaining...",5,1,1,1);
             say("but thank you anyway...",3,1,1,1);
-            say("I\'ll try to figure out this by my self...",6,1,1,1);
+            say("I’ll try to figure out this by my self...",6,1,1,1);
             console.log("\x1B[2mJames Died\nLevel I failed\x1B[0m");
             process.exit(1);
         } else if (initial == 1 && initial != 0) {
             //玩家错误输入第一次
-            say("Well...I need an exact answer, that\'s related to my life",5,1,1,1);
+            say("Well...I need an exact answer, that’s related to my life",5,1,1,1);
             say("I don’t expect you to be a good person, I just hope you can help me in this matter of life and death, seriously",10,2,1,1);
             say("You just need to say ",2,0,1,0);
             say("YES",1,0,1,0);
