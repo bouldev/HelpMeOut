@@ -1,0 +1,40 @@
+{
+  "info": {
+    /* 章节的基础信息 */
+    "storyFile": "Waken James.js",//故事主体的位置
+    "episodeName": "Waken James",//故事名称
+    "is_main_story_line": true,//主线剧情
+    "version": "0.0.1",//主版本.子版本.补丁
+    "episodeID": "0",//故事ID
+    "debug": true//调试模式
+  },
+  "settings": {
+    /* 有关章节的配置 */
+    "OS_limit": {
+      //对系统类型进行筛选，include与exclude只能选择其一使用，不填默认include_all
+      //在exclude设定的系统将无法加载该剧情，其余则可加载剧情
+      //BLM, we are not going to use 'blacklist' and 'whitelist', 'include' & 'exclude' as alternative
+      /*"include": [
+        "all"
+      ],
+      "exclude": [
+      ]*/
+    },
+    "OS_branch": {
+      //对系统类型进行区分，以不同的方式启动剧情文件，不进行区分或未在列表将以main方式启动
+      /*"linux": "ln",
+      "darwin": "dw",
+      "windows": "wd"*/
+    },
+    "language_support": [
+      "en_US"/*,
+      "en_UK",
+      "zh_CN",
+      "zh_HK",
+      "zh_MA",
+      "zh_TW"*/
+    ],
+    "require_language_consistancy": true,
+    "specifyLanguagePath": []
+  }
+}
