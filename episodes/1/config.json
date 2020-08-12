@@ -1,12 +1,11 @@
 {
   "info": {
     /* 章节的基础信息 */
-    "storyFile": "Waken James.js",//故事主体的位置
+    "storyFile": "01.js",//故事主体的位置
     "episodeName": "Waken James",//故事名称
-    "is_main_story_line": true,//主线剧情
-    "version": "0.0.1",//主版本.子版本.补丁
-    "episodeID": "0",//故事ID
-    "debug": true//调试模式
+    "version": "0.0.1",//主版本.子版本.补丁(UNUSED)
+    "episodeID": "helpmeout.mainepisodes.1"//故事唯一ID (主线写死从 helpmeout.mainepisodes.1 切入)
+    //"debug": true  //调试模式(DEPRECATED)
   },
   "settings": {
     /* 有关章节的配置 */
