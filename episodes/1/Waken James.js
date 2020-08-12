@@ -4,7 +4,8 @@ var initial = 0;
 if (process.argv.slice(2) == "main") {
     main();
 }
-function main() {
+exports.main = function() {
+    //say(文本，文本显示所需时间（秒），文本显示后所延迟时间（秒），是否可以跳过这句话（0/1）,输出完成是否换行（0/1）);
     story.say("...",1,3,1,1);
     story.say("oh my gosh, how do you noticed here is a person inside?",4,2,1,1);
     story.say("hard to believe that my pal...",2,2,1,1)

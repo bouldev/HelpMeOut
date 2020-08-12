@@ -1,6 +1,15 @@
 # HelpMeOut
+## README guidance
+### Currently Available Languages:
+**[中文（简体）](instructions/README_zh_CN.md)**
 
-## Description
-HelpMeOut is a command-line based game!
+**[English (US)](instructions/README_en_US.md)**
+### Planned support languages:
 
-<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />本作品采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可。
+[English (UK)](instructions/README_en_GB.md)
+
+[中文（繁體）](instructions/README_zh_TR.md)
+
+[中文（香港）](instructions/README_zh_HK.md)
+
+[中文（台湾）](instructions/README_zh_TW.md)
