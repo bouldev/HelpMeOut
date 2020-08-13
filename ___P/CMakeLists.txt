@@ -6,5 +6,5 @@ set(CMAKE_C_STANDARD 11)
 
 aux_source_directory(src SOURCES)
 
-add_executable(HelpMeOut)
+add_executable(HelpMeOut ${SOURCES})
 target_link_libraries(HelpMeOut)

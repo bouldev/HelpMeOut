@@ -1,0 +1,9 @@
+// 故事线配置文件
+{
+	"version": "0.0.1", // 主版本.子版本.次子版本 (暂未使用)
+	"lineName": "HelpMeOut", // 故事线名称
+	"lineID": "helpmeout.storyline.main", // 故事线唯一ID
+	"entry": "helpmeout.mainepisodes.1", // 切入章节
+	"episodes_dir": "episodes", // 章节目录名称，章节目录里所有文件必须都是文件夹
+	"settings": {}
+}
