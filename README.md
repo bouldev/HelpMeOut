@@ -1,4 +1,6 @@
 # HelpMeOut
+## Story Script API Reference
+[中文（简体）](instructions/StoryScriptAPIReference_zh_CN.md)
 ## README guidance
 ### Currently Available Languages:
 **[中文（简体）](instructions/README_zh_CN.md)**

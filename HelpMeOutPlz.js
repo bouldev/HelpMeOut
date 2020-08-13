@@ -1,8 +1,10 @@
-/* Bouldev 2020
-   如需更改该文件并push，请将更改部分进行完整注释，避免工作无法衔接导致项目滞后。
-   */
+/*	Bouldev 2020
+	如需更改该文件并push，请将更改部分进行完整注释，避免工作无法衔接导致项目滞后。
+*/
 const fs=require("fs");
 const vm=require("vm");
+const crypto=require("crypto");
+const zlib=require("zlib");
 
 let DEBUG = true;
 
@@ -17,23 +19,94 @@ function log(content){
 	}
 }
 
+// ENGINE-WIDE ENCRYPT METHODS
+function aes256encrypt(data){
+	return crypto.createCipheriv("aes-256-cfb",Buffer.from("Help me out plz,this is the key."),Buffer.from("bushe nmsl wrnmb")).update(data);
+}
+function aes256decrypt(data){
+	return crypto.createDecipheriv("aes-256-cfb",Buffer.from("Help me out plz,this is the key."),Buffer.from("bushe nmsl wrnmb")).update(data).toString();
+}
+function aes256decryptToBuf(data){
+	return crypto.createDecipheriv("aes-256-cfb",Buffer.from("Help me out plz,this is the key."),Buffer.from("bushe nmsl wrnmb")).update(data);
+}
+
 // 存档 GAMESTATE
 
 // (以下方法在storyScript中不能使用)
 // ENGINE WIDE readGameStateWithEpid:
 // string lid: 故事线ID
-// return: unsigned short gameState
-// return: ^ 如未找到则返回0.
+// return: SECTION {lid: ,epid: ,data: ,state: }
+// return: ^ 如未找到则返回{}.
 function readGameStateWithLineId(lid) {
-	
+	if(!fs.existsSync("Memory"))return {};
+	let mem=JSON.parse(zlib.gunzipSync(aes256decryptToBuf(fs.readFileSync("Memory"))));
+	if(!mem.hasOwnProperty(lid))return {};
+	return mem[lid];
+	//ORIGINAL
+	let pointer=0;
+	function readStr(){
+		let th="";
+		while(true){
+		if(buf[pointer]==0){pointer++;return th;}
+		th+=buf.toString("ascii",pointer,pointer+1);
+		pointer++;
+		}
+	}
+	function readSection(){
+		let obj={};
+		obj.lid=readStr();
+		obj.epid=readStr();
+		obj.lang=buf[pointer];
+		pointer++;
+		obj.state=buf.readUInt16BE(pointer);
+		pointer+=2;
+	}
+	while(true){
+		let sect=readSection();
+		if(sect.lid==lid)return sect;
+	}
+	return null;
 }
-// ENGINE WIDE readGameStateWithEpid:AndState:
+// ENGINE WIDE saveGameStateWithEpid:AndState:
 // string lid: 故事线ID
 // string epid: 章节ID
-// unsigned short state: Game State.
-// ^ ~建议将0作为起始state.
-function saveGameStateWithLineIdAndState(lid,epid,state) {
+// Object data: 内容
+// int state: 进度(单独存储)
+function saveGameStateWithLineIdAndState(lid,epid,data,state) {
+	if(!state)state=0;
+	let mem={};
+	if(fs.existsSync("Memory")){
+		mem=JSON.parse(zlib.gunzipSync(aes256decryptToBuf(fs.readFileSync("Memory"))));
+	}
+	if(mem.hasOwnProperty(lid)){
+		mem[lid].lid=lid;
+		mem[lid].epid=epid;
+		if(data!==null)mem[lid].data=data;
+		if(state!=-1)mem[lid].state=state;
+	}else{
+		if(data===null)data={};
+		if(state==-1)state=0;
+		mem[lid]={lid,epid,data,state};
+	}
+	fs.writeFileSync("Memory",aes256encrypt(zlib.gzipSync(JSON.stringify(mem))));
 	
+	
+	return;
+	//ORIGINAL
+	if(!state)state=0;
+	let pointer=0;
+	function writebuf(val,typ){
+		if(typ==1){
+			buf[pointer]=val;
+			pointer++;
+		}else if(typ==2){
+			buf.writeInt16BE(val,pointer);
+			pointer+=2;
+		}else{
+			buf.write(val,pointer);
+			pointer+=val.length;
+		}
+	}
 }
 
 // END OF GAMESTATE
@@ -163,6 +236,12 @@ for(let episode of fs.readdirSync("episodes")){
 }*/
 //story methods
 async function story_say(text, spend, delay, skiable, wrap) {
+	if(typeof(text)!="string"){
+		throw new TypeError("story.say: Invalid type of argument text");
+	}
+	if(spend<0||delay<0){
+		throw new TypeError("story.say: spend or delay must >= 0.");
+	}
 	//James标准输出方法
 	if (DEBUG) {
 		//为了节省测试时间，设置DEBUG FLAG可以省略特效
@@ -187,7 +266,7 @@ async function story_say(text, spend, delay, skiable, wrap) {
 	await sleep(delay);
 }
 
-async function story_askforhelp(cb){
+async function story_askforhelp(){
 	story_say("(Y/n): ",0,0,1,0);
 	let input=await new Promise((ret)=>{
 		inputcb=ret;
@@ -201,6 +280,14 @@ async function story_askforhelp(cb){
 		return -1;
 	}
 }
+
+async function story_askforinput(){
+	story_say("(Input): ",0,0,1,0);
+	let input=await new Promise((ret)=>{
+		inputcb=ret;
+	});
+	return input
+}
 //story methods =END=
 
 function runStoryline(storyline){
@@ -210,14 +297,15 @@ function runStoryline(storyline){
 			log(`ERROR| Next episode(id:${epid}) not found,nowhere to go..`);
 			process.exit(6);
 		}
+		saveGameStateWithLineIdAndState(storyline.lineID,epid,null,-1);
 		try{
 			vm.runInNewContext(allEpisodes[epid].script,{engine:{
 				log:log,
 				hasEpisode:allEpisodes.hasOwnProperty,
 				jumpToEpisode:runEpisodeWithEpisodeId,
 				sleepNoAwait:(numberMillis,noDeprecationWarning)=>{
-					// DEPRECATED , USE (await) game.sleep instead.
-					if(!noDeprecationWarning)log(`engine.sleepNoAwait is deprecated,please use await game.sleep instead.`);
+					// DEPRECATED , USE (await) engine.sleep instead.
+					if(!noDeprecationWarning)log(`engine.sleepNoAwait is deprecated,please use await engine.sleep instead.`);
 					let now = new Date();
 					let exitTime = now.getTime() + numberMillis;
 					while (true) {
@@ -237,19 +325,41 @@ function runStoryline(storyline){
 					//目前无更多操作 故退出.
 					console.log(`Game failed due to ${reason}.`);
 					process.exit(1);
-				}
-			},game:{
+				},
+				// SLEEP: ASYNC
 				sleep:sleep
+			},game:{
+				saveState:(state)=>{
+					if(typeof(state)!="number"){
+						throw new TypeError("saveState: state must be a number.");
+					}
+					saveGameStateWithLineIdAndState(storyline.lineID,epid,null,state);
+				},
+				readState:()=>{
+					return readGameStateWithLineId(storyline.lineID).state;
+				},
+				saveGameData:(data)=>{
+					saveGameStateWithLineIdAndState(storyline.lineID,epid,data,-1);
+				},
+				readGameData:()=>{
+					return readGameStateWithLineId(storyline.lineID).data;
+				}
 			},story:{
 				say:story_say,
-				askforhelp:story_askforhelp
-			},setInterval,setTimeout,Promise},{filename:`${allEpisodes[epid].info.episodeID}.${allEpisodes[epid].info.storyFile}`});
+				askforhelp:story_askforhelp,
+				askforinput:story_askforinput
+			},setInterval,setTimeout,Promise,JSON,clearTimeout,clearInterval,setImmediate,clearImmediate},{filename:`${allEpisodes[epid].info.episodeID}.${allEpisodes[epid].info.storyFile}`});
 		}catch(err){
 			log(`ERROR| SCRIPT ERROR OCCURRED WHEN EXECUTING STORY SCRIPT:${err.stack}`);
 			process.exit(7);
 		}
 	}
-	runEpisodeWithEpisodeId(storyline.info.entry);
+	let sectgamestate=readGameStateWithLineId(storyline.lineID);
+	if(sectgamestate.epid){
+		runEpisodeWithEpisodeId(sectgamestate.epid);
+	}else{
+		runEpisodeWithEpisodeId(storyline.info.entry);
+	}
 }
 
 async function storyLineSelector(){
@@ -267,6 +377,7 @@ async function storyLineSelector(){
 		let id=await new Promise((retr)=>{
 			inputcb=retr;
 		});
+		inputcb=null;
 		if(ltd[parseInt(id)]===undefined)continue;
 		if(parseInt(id)==0){
 			process.exit(0);
