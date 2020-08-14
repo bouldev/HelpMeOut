@@ -5,6 +5,8 @@ const fs=require("fs");
 const vm=require("vm");
 const crypto=require("crypto");
 const zlib=require("zlib");
+var exec = require('child_process').exec;
+var cmdSay = "";
 
 let DEBUG = true;
 
@@ -266,6 +268,44 @@ async function story_say(text, spend, delay, skiable, wrap) {
 	await sleep(delay);
 }
 
+async function story_say_with_voice(text, spend, delay, skiable, wrap, actor){
+//MACOS ONLY!
+	cmdSay = "say -v " + actor + " " + text;
+	if(typeof(text)!="string"){
+		throw new TypeError("story.say: Invalid type of argument text");
+	}
+	if(spend<0||delay<0){
+		throw new TypeError("story.say: spend or delay must >= 0.");
+	}
+	//James标准输出方法+macOS自带TTS
+	if (DEBUG) {
+		//为了节省测试时间，设置DEBUG FLAG可以省略特效
+		spend = 0;
+		delay = 0;
+	} else {
+		spend = spend * 1000;
+		delay = delay * 1000;
+	}
+	let output = text.split("");
+	if (skiable == 1) {
+		//还没想好怎么写gg
+		//我认为一个真实的思想是不会允许其他人打断的
+	}
+	exec(cmdSay, function(err,stdout,stderr){
+		if(err) {
+			throw new TypeError("macOS say error: " + stderr);
+		}
+	});
+	for (let i = 0; i < output.length; i++) {
+		process.stdout.write(output[i]);
+		await sleep(spend / output.length);
+	}
+	if (wrap == 1) {
+		process.stdout.write("\n");
+	}
+	await sleep(delay);
+}
+
 async function story_askforhelp(){
 	story_say("(Y/n): ",0,0,1,0);
 	let input=await new Promise((ret)=>{
@@ -346,6 +386,7 @@ function runStoryline(storyline){
 				}
 			},story:{
 				say:story_say,
+				sayvoice:story_say_with_voice,
 				askforhelp:story_askforhelp,
 				askforinput:story_askforinput
 			},setInterval,setTimeout,Promise,JSON,clearTimeout,clearInterval,setImmediate,clearImmediate},{filename:`${allEpisodes[epid].info.episodeID}.${allEpisodes[epid].info.storyFile}`});
