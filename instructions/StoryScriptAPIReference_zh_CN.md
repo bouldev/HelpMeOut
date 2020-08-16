@@ -61,6 +61,16 @@
     - `unsigned int delay`: 输出后等待时间(ms)
     - `bool skipable`: 是否可跳过(尚未实现)
     - `bool warp`: 末尾是否换行
+#### (async) story.sayvoice
+输出文字并朗读
+(！：仅限macOS)
+* Arguments
+    - `string text`: 内容
+    - `unsigned int spend`: 文字输出耗时(ms)
+    - `unsigned int delay`: 输出后等待时间(ms)
+    - `bool skipable`: 是否可跳过(尚未实现)
+    - `bool warp`: 末尾是否换行
+    - `string actor`: 角色声音/声优名称
 #### (async) story.askforhelp
 寻求帮助(选择Y/n)
 * 无参数
