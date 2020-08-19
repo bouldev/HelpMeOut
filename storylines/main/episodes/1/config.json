@@ -7,22 +7,7 @@
   //"debug": true,  //调试模式(DEPRECATED)
   "settings": {
     /* 有关章节的配置 */
-    "OS_limit": {
-      //对系统类型进行筛选，include与exclude只能选择其一使用，不填默认include_all
-      //在exclude设定的系统将无法加载该剧情，其余则可加载剧情
-      //BLM, we are not going to use 'blacklist' and 'whitelist', 'include' & 'exclude' as alternative
-      /*"include": [
-        "all"
-      ],
-      "exclude": [
-      ]*/
-    },
-    "OS_branch": {
-      //对系统类型进行区分，以不同的方式启动剧情文件，不进行区分或未在列表将以main方式启动
-      /*"linux": "ln",
-      "darwin": "dw",
-      "windows": "wd"*/
-    },
+    // OS_limit  OS_branch 可通过storyscript实现
     "language_support": [
       "en_US"/*,
       "en_UK",

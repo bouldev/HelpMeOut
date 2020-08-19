@@ -367,7 +367,13 @@ function runStoryline(storyline){
 					process.exit(1);
 				},
 				// SLEEP: ASYNC
-				sleep:sleep
+				sleep:sleep,
+				isiOS:()=>{
+					return false;
+				},
+				isInMacOS:()=>{
+					return (require("os").platform()=="darwin");
+				}
 			},game:{
 				saveState:(state)=>{
 					if(typeof(state)!="number"){

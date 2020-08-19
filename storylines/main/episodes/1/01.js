@@ -18,7 +18,7 @@ async function main() {
 			await story.say("oh god...\nI’m so grateful, how can I give back to you",8,1,1,1);
 			await story.say("thank you...",2,1,1,1);
 			engine.log("\x1B[2mLevel I Succeeded\x1B[0m");
-			engine.finish();
+			engine.jumpToEpisode("helpmeout.mainepisodes.2");
 			return;
 		}else if(firstAsk==0){
 			//玩家选择NO之后的剧情

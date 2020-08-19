@@ -32,6 +32,16 @@
 以毫秒为单位睡眠。  
 * Arguments
     - `number numberMillis`: 等待时间(毫秒)
+#### engine.isInMacOS
+检测是否在MacOS上运行，由于iOS此项也返回true，故应额外检测是否在iOS运行
+* 无参数
+* Return
+    - `bool`
+#### engine.isiOS
+检测是否在iOS上运行
+* 无参数
+* Return
+    - `bool`
 ### game
 (每个故事线一个独立存档)
 #### game.saveState
