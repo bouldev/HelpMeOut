@@ -36,6 +36,7 @@ int main(int argc,char *argv[]){
 		if(sel==0)return 0;
 		if(sel-1>=storylines.size()||sel<0)continue;
 		scriptLoader.loadStoryLine(storylines[sel-1].get());
+		break;
 	}
 	return 0;
 }
