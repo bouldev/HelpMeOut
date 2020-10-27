@@ -8,7 +8,8 @@ const zlib=require("zlib");
 var exec = require('child_process').exec;
 var cmdSay = "";
 
-let DEBUG = true;
+//`node HelpMeOut release` to disable debug at that moment
+let DEBUG = (process.argv[2] == "release") ? false : true;
 
 let inputcb;
 process.stdin.on("data",(input)=>{
@@ -410,29 +411,35 @@ function runStoryline(storyline){
 }
 
 async function storyLineSelector(){
-	console.log("Select a story line");
-	console.log("===================");
-	console.log("0) Exit");
-	let ltd=[0];
-	for(let line in allLines){
-		console.log("%d) %s",ltd.length,allLines[line].info.lineName);
-		ltd.push(line);
-	}
-	let selLine;
-	while(true){
-		process.stdout.write("(ID): ");
-		let id=await new Promise((retr)=>{
-			inputcb=retr;
-		});
-		inputcb=null;
-		if(ltd[parseInt(id)]===undefined)continue;
-		if(parseInt(id)==0){
-			process.exit(0);
-		}
-		selLine=allLines[ltd[parseInt(id)]];
-		break;
-	}
-	runStoryline(selLine);
+    let ltd=[0];
+    let selLine;
+    //if not in debug, Selector would auto run main storyline
+    if(DEBUG) {
+        console.log("Select a story line");
+        console.log("===================");
+        console.log("0) Exit");
+        for(let line in allLines){
+            console.log("%d) %s",ltd.length,allLines[line].info.lineName);
+            ltd.push(line);
+        }
+        while(true){
+            process.stdout.write("(ID): ");
+            let id=await new Promise((retr)=>{
+                inputcb=retr;
+            });
+            inputcb=null;
+            if(ltd[parseInt(id)]===undefined)continue;
+            if(parseInt(id)==0){
+                process.exit(0);
+            }
+            selLine=allLines[ltd[parseInt(id)]];
+            break;
+        }
+    } else {
+        for(let line in allLines)ltd.push(line);
+        selLine=allLines[ltd[parseInt(1)]];
+    }
+    runStoryline(selLine);
 }
 storyLineSelector();
 //runEpisodeWithEpisodeId(mainEpisodeID);
