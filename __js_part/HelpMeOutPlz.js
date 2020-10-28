@@ -361,20 +361,37 @@ function runStoryline(storyline){
 					//(结束故事线)
 					process.exit(0);
 				},
+                debug:()=>{
+                    return DEBUG;
+                },
 				fail:(reason)=>{
 					//游戏失败
 					//目前无更多操作 故退出.
-					console.log(`Game failed due to ${reason}.`);
+                    if (DEBUG) {
+                        console.log(`\x1B[37;100mGame failed due to ${reason}.\nNormally, the game will enter dead storyline, in debug mode we disabled it and remains original gamestate.\x1B[0m`);
+                    } else {
+                        //In release, epi0(dead episode) will run if James died.
+                        runEpisodeWithEpisodeId("helpmeout.mainepisodes.0");
+                    }
 					process.exit(1);
 				},
 				// SLEEP: ASYNC
 				sleep:sleep,
+                isAndroid:()=>{
+                    //currently Nodejs might read android as "linux" or "android", it's experimental
+                    return (process.platform=="android");
+                },
 				isiOS:()=>{
-					return false;
+                    //currently Nodejs cannot read ios correctly, it might misread as "darwin"
+                    //if you run HelpMeOut in JSBox or other ios apps with Nodejs support, it would return "ios"
+					return (process.platform=="ios");
 				},
-				isInMacOS:()=>{
-					return (require("os").platform()=="darwin");
-				}
+				isMacOS:()=>{
+					return (process.platform=="darwin");
+                },
+                isWindows:()=>{
+                    return (process.platform=="win32");
+                }
 			},game:{
 				saveState:(state)=>{
 					if(typeof(state)!="number"){

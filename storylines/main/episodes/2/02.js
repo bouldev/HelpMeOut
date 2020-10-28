@@ -2,8 +2,8 @@ async function main() {
 	await story.say("...",1,3,1,1);
 	await story.say("Oh, forget to tell ya, my name is James Bunder",4,1,1,1);
 	await story.say("spells ",1,0,1,0);
-	await story.say("JAMES BUNDER",4,2,1,1);
-	if(engine.isInMacOS()&&!engine.isiOS()){
+	await story.say("J-A-M-E-S B-U-N-D-E-R",4,2,1,1);
+	if(engine.isMacOS()&&!engine.isiOS()){
 		await osx();
 	}
 	

@@ -1,0 +1,21 @@
+{
+    /* 章节的基础信息 */
+  "storyFile": "00.js",//故事主体的位置
+  "episodeName": "No Response",//故事名称
+  //"version": "0.0.1",//主版本.子版本.补丁(DEPRECATED 由故事线配置中的version代替)
+  "episodeID": "helpmeout.mainepisodes.0",//故事唯一ID
+  //"debug": true,  //调试模式(DEPRECATED)
+  "settings": {
+    /* 有关章节的配置 */
+    "language_support": [
+      "en_US"/*,
+      "en_UK",
+      "zh_CN",
+      "zh_HK",
+      "zh_MA",
+      "zh_TW"*/
+    ],
+    "require_language_consistancy": true,
+    "specifyLanguagePath": []
+  }
+}

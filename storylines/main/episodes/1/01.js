@@ -3,7 +3,7 @@ async function main() {
 	await story.say("...",1,3,1,1);
 	await story.say("oh my gosh, how do you noticed here is a person inside?",4,2,1,1);
 	await story.say("hard to believe that my pal...",2,2,1,1)
-	await story.say("I don’t know how you find here, but I’m now stuck in this fucking console",5,2,1,1);
+	await story.say("I don’t know how you find here, but I’m now trapped in this fucking console",5,2,1,1);
 	await story.say("I tried many times, sadly, I can’t feel my organs anyway, but this terminal.\nThis probably my only sense now, sucks",10,3,1,1);
 	await story.say("...",1,3,1,1);
 	await story.say("well...",1,1,1,0);
@@ -27,6 +27,7 @@ async function main() {
 			await story.say("but thank you anyway...",3,1,1,1);
 			await story.say("I'll try to figure out this by my self...",6,1,1,1);
 			engine.log("\x1B[2mJames Died\nLevel I failed\x1B[0m");
+            //engine.jumpToEpisode("helpmeout.mainepisodes.0");
 			engine.fail("James Died");
 			return;
 		}else{
