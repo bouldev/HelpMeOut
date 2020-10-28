@@ -1,0 +1,21 @@
+{
+    /* 章节的基础信息 */
+  "storyFile": "01.js",//故事主体的位置
+  "episodeName": "Example 01",//故事名称
+  //"version": "0.0.1",//主版本.子版本.补丁(DEPRECATED 由故事线配置中的version代替)
+  "episodeID": "helpmeout.example.1",//故事唯一ID
+  //"debug": true,  //调试模式(DEPRECATED)
+  "settings": {
+    /* 有关章节的配置 */
+    "language_support": [
+      "en_US"/*,
+      "en_UK",
+      "zh_CN",
+      "zh_HK",
+      "zh_MA",
+      "zh_TW"*/
+    ],
+    "require_language_consistancy": true,
+    "specifyLanguagePath": []
+  }
+}

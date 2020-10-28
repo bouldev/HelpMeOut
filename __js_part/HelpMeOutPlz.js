@@ -241,6 +241,7 @@ for(let episode of fs.readdirSync("episodes")){
 async function story_say(text, spend, delay, skiable, wrap) {
 	if(typeof(text)!="string"){
 		throw new TypeError("story.say: Invalid type of argument text");
+		//text=text+"";
 	}
 	if(spend<0||delay<0){
 		throw new TypeError("story.say: spend or delay must >= 0.");
@@ -307,18 +308,18 @@ async function story_say_with_voice(text, spend, delay, skiable, wrap, actor){
 	await sleep(delay);
 }
 
-async function story_askforhelp(){
+async function story_askforhelp(returnInput){
 	story_say("(Y/n): ",0,0,1,0);
 	let input=await new Promise((ret)=>{
 		inputcb=ret;
 	});
 	input = input.toString().trim().toLowerCase();
-	if (['y', 'yes'].indexOf(input) > -1) {
+	if (['y', 'yes', 'true', '1', 'sure', 'no problem', 'of course'].indexOf(input) > -1) {
 		return 1;
-	}else if (['n', 'no'].indexOf(input) > -1) {
+	}else if (['n', 'no', 'false', '0'].indexOf(input) > -1) {
 		return 0;
 	}else{
-		return -1;
+		return (returnInput ? input : -1);
 	}
 }
 
@@ -391,6 +392,18 @@ function runStoryline(storyline){
                 },
                 isWindows:()=>{
                     return (process.platform=="win32");
+                },
+                isUnixBased:()=>{
+                    return (process.platform!="win32" || process.platform!="linux" || process.platform!="android");
+				},
+                isUnixLike:()=>{
+                    return (process.platform!="win32");
+                },
+                isDarwin:()=>{
+                    return (process.platform=="ios" || process.platform=="darwin");
+                },
+                isLinux:()=>{
+                    return (process.platform=="linux" || process.platform=="android");
                 }
 			},game:{
 				saveState:(state)=>{
@@ -453,8 +466,9 @@ async function storyLineSelector(){
             break;
         }
     } else {
-        for(let line in allLines)ltd.push(line);
-        selLine=allLines[ltd[parseInt(1)]];
+		for(let line in allLines)ltd.push(line);
+		selLine=allLines['helpmeout.storyline.main'];
+		console.log(selLine);
     }
     runStoryline(selLine);
 }
