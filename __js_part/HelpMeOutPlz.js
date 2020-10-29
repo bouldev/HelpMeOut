@@ -177,18 +177,22 @@ function fastParse(filename){
 }
 
 let allLines={}
-
+let testl=0;
 for(let episode of fs.readdirSync("storylines")){
+	testl++;
+	//Read storylines
 	if(!fs.existsSync(`storylines/${episode}/manifest.json`)){
-		log(`Storyline named ${episode} doesn't have a manifest file,ignoring.`);
+		log(`Storyline named ${episode} doesn't have a manifest file, ignoring.`);
 		continue;
 	}
-	const episodeConfig=fastParse(`storylines/${episode}/manifest.json`);
+	let episodeConfig=fastParse(`storylines/${episode}/manifest.json`);
+	//Check duplicated storylines
 	if(allLines.hasOwnProperty(episodeConfig.lineID)){
 		log(`ERROR| Duplicated Storyline ID: ${episodeConfig.lineID}`);
 		process.exit(5);
 	}
 	episodeConfig.episodes_dir=episodeConfig.episodes_dir.replace(/\.\./g,"");
+	//Check episodes
 	if(!fs.existsSync(`storylines/${episode}/${episodeConfig.episodes_dir}`)){
 		log(`WARNING| Episodes directory not found in storyline w/ id ${episodeConfig.lineID}, ignoring.`);
 		continue;
@@ -199,7 +203,7 @@ for(let episode of fs.readdirSync("storylines")){
 			log(`Episode named ${ep} doesn't have a config file,ignoring.`);
 			continue;
 		}
-		const epConfig=fastParse(`storylines/${episode}/${episodeConfig.episodes_dir}/${ep}/config.json`);
+		let epConfig=fastParse(`storylines/${episode}/${episodeConfig.episodes_dir}/${ep}/config.json`);
 		if(episodes.hasOwnProperty(epConfig.episodeID)){
 			log(`ERROR(IGN)| Duplicated Episode ID ${epConfig.episodeID} in storyline with id: ${episodeConfig.lineID}, IGNORING.`);
 			continue;
@@ -220,6 +224,9 @@ for(let episode of fs.readdirSync("storylines")){
 	}
 	allLines[episodeConfig.lineID]={info:episodeConfig,episodes};
 }
+console.log("\n\n\n");
+console.log(allLines);
+console.log(testl);
 /*
 for(let episode of fs.readdirSync("episodes")){
 	if(!fs.existsSync(`episodes/${episode}/config.json`)){
@@ -339,7 +346,8 @@ function runStoryline(storyline){
 			log(`ERROR| Next episode(id:${epid}) not found,nowhere to go..`);
 			process.exit(6);
 		}
-		saveGameStateWithLineIdAndState(storyline.lineID,epid,null,-1);
+		saveGameStateWithLineIdAndState(storyline.info.lineID,epid,null,-1);
+		console.log(storyline.info.lineID);
 		try{
 			vm.runInNewContext(allEpisodes[epid].script,{engine:{
 				log:log,
@@ -388,7 +396,7 @@ function runStoryline(storyline){
 					return (process.platform=="ios");
 				},
 				isMacOS:()=>{
-					return (process.platform=="darwin");
+					return (process.platform=="darwin" && process.platform!="ios");
                 },
                 isWindows:()=>{
                     return (process.platform=="win32");
@@ -410,29 +418,45 @@ function runStoryline(storyline){
 					if(typeof(state)!="number"){
 						throw new TypeError("saveState: state must be a number.");
 					}
-					saveGameStateWithLineIdAndState(storyline.lineID,epid,null,state);
+					saveGameStateWithLineIdAndState(storyline.info.lineID,epid,null,state);
 				},
 				readState:()=>{
-					return readGameStateWithLineId(storyline.lineID).state;
+					return readGameStateWithLineId(storyline.info.lineID).state;
 				},
 				saveGameData:(data)=>{
-					saveGameStateWithLineIdAndState(storyline.lineID,epid,data,-1);
+					saveGameStateWithLineIdAndState(storyline.info.lineID,epid,data,-1);
 				},
 				readGameData:()=>{
-					return readGameStateWithLineId(storyline.lineID).data;
+					return readGameStateWithLineId(storyline.info.lineID).data;
 				}
 			},story:{
 				say:story_say,
 				sayvoice:story_say_with_voice,
 				askforhelp:story_askforhelp,
 				askforinput:story_askforinput
+			},debug:{
+				get:(targetInfo)=>{
+					switch(targetInfo) {
+						case "help":
+							log("debug.get(\"{arg}\");\n${arg} can be one of the items that listed below:\nos, state_raw, ram, rom.");
+							break;
+						case "os":
+							log(process.platform);
+							break;
+						case "state_raw":
+							log(zlib.gunzipSync(aes256decryptToBuf(fs.readFileSync("Memory"))));
+							break;
+						default:
+							log("debug.get: Invalid argument, use \x1B[93;100mdebug.get(\"help\")\x1B[0m to get help.");
+					}
+				}
 			},setInterval,setTimeout,Promise,JSON,clearTimeout,clearInterval,setImmediate,clearImmediate},{filename:`${allEpisodes[epid].info.episodeID}.${allEpisodes[epid].info.storyFile}`});
 		}catch(err){
 			log(`ERROR| SCRIPT ERROR OCCURRED WHEN EXECUTING STORY SCRIPT:${err.stack}`);
 			process.exit(7);
 		}
 	}
-	let sectgamestate=readGameStateWithLineId(storyline.lineID);
+	let sectgamestate=readGameStateWithLineId(storyline.info.lineID);
 	if(sectgamestate.epid){
 		runEpisodeWithEpisodeId(sectgamestate.epid);
 	}else{
@@ -447,11 +471,12 @@ async function storyLineSelector(){
     if(DEBUG) {
         console.log("Select a story line");
         console.log("===================");
-        console.log("0) Exit");
+        console.log("0) Remove Existing GameState");
         for(let line in allLines){
             console.log("%d) %s",ltd.length,allLines[line].info.lineName);
             ltd.push(line);
-        }
+		}
+		console.log("\x1B[2mTo exit, simply press ^C.\x1B[0m");
         while(true){
             process.stdout.write("(ID): ");
             let id=await new Promise((retr)=>{
@@ -460,15 +485,20 @@ async function storyLineSelector(){
             inputcb=null;
             if(ltd[parseInt(id)]===undefined)continue;
             if(parseInt(id)==0){
+				fs.unlink('Memory', function(err) {
+   					if (err) {
+       					return console.error(err);
+   					}
+				});
                 process.exit(0);
             }
-            selLine=allLines[ltd[parseInt(id)]];
+			selLine=allLines[ltd[parseInt(id)]];
+			console.log(selLine);
             break;
         }
     } else {
 		for(let line in allLines)ltd.push(line);
 		selLine=allLines['helpmeout.storyline.main'];
-		console.log(selLine);
     }
     runStoryline(selLine);
 }

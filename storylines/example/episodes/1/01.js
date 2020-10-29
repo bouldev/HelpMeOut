@@ -2,6 +2,7 @@ async function main() {
 	await story.say("Welcome to HelpMeOut Developer Guide!",4,3,1,1);
     await story.say("In this guide, we will tell you how to use ours API.",4,3,1,1);
     engine.log("Currently NOT IN USE. Sorry.");
+    debug.get("state_raw");
     if (engine.isMacOS) {
         engine.log("macOS detected.");
     }
