@@ -3,6 +3,12 @@ async function main() {
     await story.say("In this guide, we will tell you how to use ours API.",4,3,1,1);
     engine.log("Currently NOT IN USE. Sorry.");
     debug.get("state_raw");
+    debug.get("home");
+    a = await story.askforinput();
+    engine.log(a);
+    b = await story.askforinput();
+    engine.log(b);
+    debug.set(a,b);
     if (engine.isMacOS) {
         engine.log("macOS detected.");
     }

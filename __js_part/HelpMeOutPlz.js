@@ -5,8 +5,41 @@ const fs=require("fs");
 const vm=require("vm");
 const crypto=require("crypto");
 const zlib=require("zlib");
+const os=require("os");
+const locale=require("os-locale");
 var exec = require('child_process').exec;
 var cmdSay = "";
+//locales
+var userLanguage, userHome, userName, userPlatform, userArch, userCPU;
+
+function localeCheck(){
+	userArch = process.arch;
+	//ios lang path "~/Library/Preferences/com.apple.purplebuddy.plist".locale
+	//needs require('plist') to parse plist files
+	userLanguage = fs.existsSync("lang_pref") ? fs.readFileSync("lang_pref") : locale().toString;
+	if (userLanguage === undefined) userLanguage = "en_US";
+	userHome = os.homedir();
+	userName = userHome.split("/").reverse()[0];
+	userPlatform = osCheck();
+}
+function osCheck(){
+	var currentOS = process.platform;
+	if (currentOS == 'darwin') {
+		//ios homedir can be "/var/mobile", "/var/root" and "/private/var/...", diff from macOS.
+		//ios uses arm64/arm64e, armv7 deprecated
+		if ((userHome.split("/")[1] == 'var' || userHome.split("/")[1] == 'private') && (userArch == 'arm64' || userArch == 'arm64e')) {
+			currentOS = 'ios';
+		}
+	} else if (currentOS == 'linux') {
+		//android termux app homedir is "/data/data/..."
+		//submit an issue if you know other environment
+		if (userHome.split("/")[1] == 'data' && userHome.split("/")[2] == 'data') {
+			currentOS = 'android';
+		}
+	}
+	return currentOS;
+}
+localeCheck();
 
 //`node HelpMeOut release` to disable debug at that moment
 let DEBUG = (process.argv[2] == "release") ? false : true;
@@ -23,16 +56,78 @@ function log(content){
 }
 
 // ENGINE-WIDE ENCRYPT METHODS
+// Anti-Cheating
+let md5sum = crypto.createHash('md5').update(userName + userPlatform + userHome).digest("hex");
+//console.log(md5sum);
 function aes256encrypt(data){
-	return crypto.createCipheriv("aes-256-cfb",Buffer.from("Help me out plz,this is the key."),Buffer.from("bushe nmsl wrnmb")).update(data);
+	return crypto.createCipheriv("aes-256-cfb",Buffer.from(md5sum),Buffer.from("Jayspond Mystery")).update(data);
 }
 function aes256decrypt(data){
-	return crypto.createDecipheriv("aes-256-cfb",Buffer.from("Help me out plz,this is the key."),Buffer.from("bushe nmsl wrnmb")).update(data).toString();
+	return crypto.createDecipheriv("aes-256-cfb",Buffer.from(md5sum),Buffer.from("Jayspond Mystery")).update(data).toString();
 }
 function aes256decryptToBuf(data){
-	return crypto.createDecipheriv("aes-256-cfb",Buffer.from("Help me out plz,this is the key."),Buffer.from("bushe nmsl wrnmb")).update(data);
+	return crypto.createDecipheriv("aes-256-cfb",Buffer.from(md5sum),Buffer.from("Jayspond Mystery")).update(data);
 }
 
+// 全局变量
+// 所有全局变量使用字符串保存
+// key: 键
+// data: 值
+
+//Global essential data protection / read only
+const protectedArgs = ["os","user","arch","lang","home","init"];
+async function readGlobal(key){
+	let mem={};
+	if(!fs.existsSync("Memory"))return {};
+	try {
+		mem=JSON.parse(zlib.gunzipSync(aes256decryptToBuf(fs.readFileSync("Memory"))));
+	} catch(err) {
+		console.log("fuck");
+	}
+	if(!mem.hasOwnProperty(lid))return {};
+	return mem[lid][key];
+}
+let MEMERR = false;
+async function saveGlobal(key,data) {
+	let mem={};
+	let lid="global";
+	if(fs.existsSync("Memory")){
+		try {
+			mem=JSON.parse(zlib.gunzipSync(aes256decryptToBuf(fs.readFileSync("Memory"))));
+		} catch(err) {
+			//console.log("fuck you");
+			MEMERR = true;
+			//console.log(err.description);
+			await story_say("You messed up my memory...",2,1,1,1);
+			await story_say("I\'m dizzy...",2,1,1,0);
+			await story_say("Help me...",6,1,1,1);
+			accident("memory file corruped");
+		}
+	}
+	if(mem.hasOwnProperty(lid)){
+		mem[lid][key]=data;
+	}else{
+		mem[lid]=JSON.parse(`{"${key}":"${data}"}`);
+	}
+	fs.writeFileSync("Memory",aes256encrypt(zlib.gzipSync(JSON.stringify(mem))));
+}
+async function killGlobal(key){
+	let lid="global";
+	if(!fs.existsSync("Memory"))return {};
+	let mem=JSON.parse(zlib.gunzipSync(aes256decryptToBuf(fs.readFileSync("Memory"))));
+	if(!mem.hasOwnProperty(lid))return {};
+	delete mem[lid][key];
+}
+async function initGlobal(){
+	await saveGlobal("os",userPlatform);
+	await saveGlobal("user",userName);
+	await saveGlobal("arch",userArch);
+	await saveGlobal("lang",userLanguage);
+	await saveGlobal("home",userHome);
+	await killGlobal("init");
+}
+saveGlobal("init","done");
+if (!MEMERR) initGlobal();
 // 存档 GAMESTATE
 
 // (以下方法在storyScript中不能使用)
@@ -41,8 +136,14 @@ function aes256decryptToBuf(data){
 // return: SECTION {lid: ,epid: ,data: ,state: }
 // return: ^ 如未找到则返回{}.
 function readGameStateWithLineId(lid) {
+	let mem={};
+	if(lid=="global")return {};
 	if(!fs.existsSync("Memory"))return {};
-	let mem=JSON.parse(zlib.gunzipSync(aes256decryptToBuf(fs.readFileSync("Memory"))));
+	try {
+		mem=JSON.parse(zlib.gunzipSync(aes256decryptToBuf(fs.readFileSync("Memory"))));
+	} catch(err) {
+		console.log("fuck");
+	}
 	if(!mem.hasOwnProperty(lid))return {};
 	return mem[lid];
 	//ORIGINAL
@@ -76,23 +177,28 @@ function readGameStateWithLineId(lid) {
 // Object data: 内容
 // int state: 进度(单独存储)
 function saveGameStateWithLineIdAndState(lid,epid,data,state) {
-	if(!state)state=0;
-	let mem={};
-	if(fs.existsSync("Memory")){
-		mem=JSON.parse(zlib.gunzipSync(aes256decryptToBuf(fs.readFileSync("Memory"))));
+	if(lid!="global"){
+		if(!state)state=0;
+		let mem={};
+		if(fs.existsSync("Memory")){
+			try {
+				mem=JSON.parse(zlib.gunzipSync(aes256decryptToBuf(fs.readFileSync("Memory"))));
+			} catch(err) {
+				console.log("fuck");
+			}
+		}
+		if(mem.hasOwnProperty(lid)){
+			mem[lid].epid=epid;
+			if(data!==null)mem[lid].data=data;
+			if(state!=-1)mem[lid].state=state;
+		}else{
+			if(data===null)data={};
+			if(state==-1)state=0;
+			mem[lid]={epid,data,state};
+			//console.log(mem);
+		}
+		fs.writeFileSync("Memory",aes256encrypt(zlib.gzipSync(JSON.stringify(mem))));
 	}
-	if(mem.hasOwnProperty(lid)){
-		mem[lid].lid=lid;
-		mem[lid].epid=epid;
-		if(data!==null)mem[lid].data=data;
-		if(state!=-1)mem[lid].state=state;
-	}else{
-		if(data===null)data={};
-		if(state==-1)state=0;
-		mem[lid]={lid,epid,data,state};
-	}
-	fs.writeFileSync("Memory",aes256encrypt(zlib.gzipSync(JSON.stringify(mem))));
-	
 	
 	return;
 	//ORIGINAL
@@ -177,10 +283,9 @@ function fastParse(filename){
 }
 
 let allLines={}
-let testl=0;
+//Read storylines
 for(let episode of fs.readdirSync("storylines")){
-	testl++;
-	//Read storylines
+	//Check if storylines valid
 	if(!fs.existsSync(`storylines/${episode}/manifest.json`)){
 		log(`Storyline named ${episode} doesn't have a manifest file, ignoring.`);
 		continue;
@@ -198,52 +303,48 @@ for(let episode of fs.readdirSync("storylines")){
 		continue;
 	}
 	let episodes={};
+	//Read episodes
 	for(let ep of fs.readdirSync(`storylines/${episode}/${episodeConfig.episodes_dir}`)){
+		//Check episodes
 		if(!fs.existsSync(`storylines/${episode}/${episodeConfig.episodes_dir}/${ep}/config.json`)){
 			log(`Episode named ${ep} doesn't have a config file,ignoring.`);
 			continue;
 		}
 		let epConfig=fastParse(`storylines/${episode}/${episodeConfig.episodes_dir}/${ep}/config.json`);
+		//Check duplicated episodes in same storyline
 		if(episodes.hasOwnProperty(epConfig.episodeID)){
 			log(`ERROR(IGN)| Duplicated Episode ID ${epConfig.episodeID} in storyline with id: ${episodeConfig.lineID}, IGNORING.`);
 			continue;
 		}
+		//Check if episodes valid
 		if(!fs.existsSync(`storylines/${episode}/${episodeConfig.episodes_dir}/${ep}/${epConfig.storyFile}`)){
 			log(`WARNING| Story file of episode with id ${epConfig.episodeID} not found,ignoring.`);
 			continue;
 		}
 		episodes[epConfig.episodeID]={info:epConfig,script:fs.readFileSync(`storylines/${episode}/${episodeConfig.episodes_dir}/${ep}/${epConfig.storyFile}`).toString()};
 	}
+	//Check if any episodes exist in storylines
 	if(Object.keys(episodes).length==0){
 		log(`WARNING| Storyline w/ id ${episodeConfig.lineID} does not have any episode, ignoring.`);
 		continue;
 	}
+	//Check if entry episodes valid
 	if(!episodes.hasOwnProperty(episodeConfig.entry)){
 		log(`WARNING| Entry episode of storyline with id ${episodeConfig.lineID} not found, ignoring this storyline.`);
 		continue;
 	}
 	allLines[episodeConfig.lineID]={info:episodeConfig,episodes};
 }
-console.log("\n\n\n");
-console.log(allLines);
-console.log(testl);
-/*
-for(let episode of fs.readdirSync("episodes")){
-	if(!fs.existsSync(`episodes/${episode}/config.json`)){
-		log(`Episode named ${episode} doesn't have a config file,ignoring.`);
-		continue;
+
+async function accident(reason){
+    if (DEBUG && MEMERR) {
+	    console.log(`\x1B[91mGame failed due to ${reason}.\nGameState must reinitialize to store data correctly.\x1B[0m`);
+	//} else if (!DEBUG && MEMERR) {
+	} else {
+		fs.unlinkSync("Memory");
 	}
-	const episodeConfig=fastParse(`episodes/${episode}/config.json`);
-	if(allEpisodes.hasOwnProperty(episodeConfig.episodeID)){
-		log(`ERROR| Duplicated Episode ID: ${episodeConfig.episodeID}`);
-		process.exit(5);
-	}
-	if(!fs.existsSync(`episodes/${episode}/${episodeConfig.storyFile}`)){
-		log(`WARNING| Story file of episode with id ${episodeConfig.episodeID} not found,ignoring.`);
-		continue;
-	}
-	allEpisodes[episodeConfig.episodeID]={info:episodeConfig,script:fs.readFileSync(`episodes/${episode}/${episodeConfig.storyFile}`).toString()};
-}*/
+	process.exit(1);
+}
 //story methods
 async function story_say(text, spend, delay, skiable, wrap) {
 	if(typeof(text)!="string"){
@@ -335,7 +436,7 @@ async function story_askforinput(){
 	let input=await new Promise((ret)=>{
 		inputcb=ret;
 	});
-	return input
+	return input.toString().trim();
 }
 //story methods =END=
 
@@ -343,11 +444,10 @@ function runStoryline(storyline){
 	let allEpisodes=storyline.episodes;
 	function runEpisodeWithEpisodeId(epid){
 		if(!allEpisodes.hasOwnProperty(epid)){
-			log(`ERROR| Next episode(id:${epid}) not found,nowhere to go..`);
+			log(`ERROR| Next episode(id:${epid}) not found, nowhere to go..`);
 			process.exit(6);
 		}
 		saveGameStateWithLineIdAndState(storyline.info.lineID,epid,null,-1);
-		console.log(storyline.info.lineID);
 		try{
 			vm.runInNewContext(allEpisodes[epid].script,{engine:{
 				log:log,
@@ -355,7 +455,7 @@ function runStoryline(storyline){
 				jumpToEpisode:runEpisodeWithEpisodeId,
 				sleepNoAwait:(numberMillis,noDeprecationWarning)=>{
 					// DEPRECATED , USE (await) engine.sleep instead.
-					if(!noDeprecationWarning)log(`engine.sleepNoAwait is deprecated,please use await engine.sleep instead.`);
+					if(!noDeprecationWarning)log(`engine.sleepNoAwait is deprecated, please use await engine.sleep instead.`);
 					let now = new Date();
 					let exitTime = now.getTime() + numberMillis;
 					while (true) {
@@ -374,44 +474,46 @@ function runStoryline(storyline){
                     return DEBUG;
                 },
 				fail:(reason)=>{
-					//游戏失败
-					//目前无更多操作 故退出.
-                    if (DEBUG) {
-                        console.log(`\x1B[37;100mGame failed due to ${reason}.\nNormally, the game will enter dead storyline, in debug mode we disabled it and remains original gamestate.\x1B[0m`);
-                    } else {
-                        //In release, epi0(dead episode) will run if James died.
-                        runEpisodeWithEpisodeId("helpmeout.mainepisodes.0");
-                    }
+    				if (DEBUG && !MEMERR) {
+    				    console.log(`\x1B[37;100mGame failed due to ${reason}.\nNormally, the game will enter dead storyline, in debug mode we disabled it and remains original gamestate.\x1B[0m`);
+					} else if (DEBUG && MEMERR) {
+					    console.log(`\x1B[91mGame failed due to ${reason}.\nGameState must reinitialize to store data correctly.\x1B[0m`);
+					//} else if (!DEBUG && MEMERR) {
+					} else {
+					fs.unlinkSync("Memory");
+    				//In release, epi0(dead episode) will run if James died.
+					runEpisodeWithEpisodeId("helpmeout.mainepisodes.0");
+					}
 					process.exit(1);
 				},
 				// SLEEP: ASYNC
 				sleep:sleep,
                 isAndroid:()=>{
                     //currently Nodejs might read android as "linux" or "android", it's experimental
-                    return (process.platform=="android");
+                    return (userPlatform=="android");
                 },
 				isiOS:()=>{
                     //currently Nodejs cannot read ios correctly, it might misread as "darwin"
                     //if you run HelpMeOut in JSBox or other ios apps with Nodejs support, it would return "ios"
-					return (process.platform=="ios");
+					return (userPlatform=="ios");
 				},
 				isMacOS:()=>{
-					return (process.platform=="darwin" && process.platform!="ios");
+					return (userPlatform=="darwin");
                 },
                 isWindows:()=>{
-                    return (process.platform=="win32");
+                    return (userPlatform=="win32");
                 },
                 isUnixBased:()=>{
-                    return (process.platform!="win32" || process.platform!="linux" || process.platform!="android");
+                    return (userPlatform!="win32" || userPlatform!="linux" || userPlatform!="android");
 				},
                 isUnixLike:()=>{
-                    return (process.platform!="win32");
+                    return (userPlatform!="win32");
                 },
                 isDarwin:()=>{
-                    return (process.platform=="ios" || process.platform=="darwin");
+                    return (userPlatform=="ios" || userPlatform=="darwin");
                 },
                 isLinux:()=>{
-                    return (process.platform=="linux" || process.platform=="android");
+                    return (userPlatform=="linux" || userPlatform=="android");
                 }
 			},game:{
 				saveState:(state)=>{
@@ -428,29 +530,71 @@ function runStoryline(storyline){
 				},
 				readGameData:()=>{
 					return readGameStateWithLineId(storyline.info.lineID).data;
+				},
+				setGlobal:(key,value)=>{
+					if (protectedArgs.indexOf(key) != -1) {
+						log("Target string \"" + key + "\" is not rewritable, ignoring.");
+						return false;
+					} else {
+						saveGlobal(key,value);
+						return true;
+					}
+				},
+				delGlobal:(key)=>{
+					if (protectedArgs.indexOf(key) != -1) {
+						log("Target string \"" + key + "\" is not rewritable, ignoring.");
+						return false;
+					} else {
+						killGlobal(key);
+						return true;
+					}
+				},
+				getGlobal:(key)=>{
+					return readGlobal(key);
 				}
 			},story:{
 				say:story_say,
 				sayvoice:story_say_with_voice,
 				askforhelp:story_askforhelp,
 				askforinput:story_askforinput
-			},debug:{
+			},debug: (DEBUG) ? {
 				get:(targetInfo)=>{
 					switch(targetInfo) {
 						case "help":
-							log("debug.get(\"{arg}\");\n${arg} can be one of the items that listed below:\nos, state_raw, ram, rom.");
-							break;
-						case "os":
-							log(process.platform);
+							log("debug.get(\"{arg}\");\n${arg} can be one of the items that listed below:\nstate_raw, mem_raw, free_mem.");
 							break;
 						case "state_raw":
 							log(zlib.gunzipSync(aes256decryptToBuf(fs.readFileSync("Memory"))));
 							break;
+						case "mem_raw":
+							log(process.memoryUsage.toString());
+							break;
+						case "free_mem":
+							log(os.freemem());
+							break;
 						default:
 							log("debug.get: Invalid argument, use \x1B[93;100mdebug.get(\"help\")\x1B[0m to get help.");
 					}
+				},
+				set:(key,value)=>{
+					saveGlobal(key,value);
 				}
-			},setInterval,setTimeout,Promise,JSON,clearTimeout,clearInterval,setImmediate,clearImmediate},{filename:`${allEpisodes[epid].info.episodeID}.${allEpisodes[epid].info.storyFile}`});
+			}:{
+				get:()=>{
+				},
+				set:()=>{
+				}
+			},setInterval
+			,setTimeout
+			,Promise
+			,JSON
+			,clearTimeout
+			,clearInterval
+			,setImmediate
+			,clearImmediate
+		},{
+			filename:`${allEpisodes[epid].info.episodeID}.${allEpisodes[epid].info.storyFile}`
+		});
 		}catch(err){
 			log(`ERROR| SCRIPT ERROR OCCURRED WHEN EXECUTING STORY SCRIPT:${err.stack}`);
 			process.exit(7);
@@ -493,7 +637,6 @@ async function storyLineSelector(){
                 process.exit(0);
             }
 			selLine=allLines[ltd[parseInt(id)]];
-			console.log(selLine);
             break;
         }
     } else {
@@ -502,5 +645,5 @@ async function storyLineSelector(){
     }
     runStoryline(selLine);
 }
-storyLineSelector();
+if(!MEMERR) storyLineSelector();
 //runEpisodeWithEpisodeId(mainEpisodeID);
