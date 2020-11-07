@@ -52,11 +52,15 @@ if (engine.isWindows) {
 |`sleep`|以秒为单位睡眠|`uint32`: 等待时间(秒) 最大值为4294967295||
 |`usleep`|以微秒为单位睡眠|`uint32`: 等待时间(微秒) 最大值为4294967295||
 ### game
-(每个故事线一个独立存档)
+每个故事线存档独立
+全局变量保留字："os","user","arch","lang","home","init"
 | 方法 | 描述 | 参数 | 返回 |
 | -- | -- | -- | -- |
-|`readState`|获取状态||`uint32 state`: 状态(默认为0)|
-|`saveState`|保存状态|`uint32 state`: 状态||
+|`readState`|获取进度||`uint32 state`: 状态(默认为0)|
+|`saveState`|保存进度|`uint32 state`: 状态||
+|`setGlobal`|设置全局变量|`string key`: 索引<br>`string value`: 值|`bool`: 是否成功写入|
+|`getGlobal`|获取全局变量|`string key`: 索引|`string`: 目标字符串内容|
+|`delGlobal`|删除全局变量|`string key`: 索引|`bool`: 是否成功写入|
 ### story
 | 方法 | 描述 | 参数 | 返回 |
 | -- | -- | -- | -- |
@@ -64,6 +68,12 @@ if (engine.isWindows) {
 |`askforinput`|等待用户输入||`string`: 用户输入|
 |`say`|输出文字|`string text`: 内容<br>`unsigned int spend`: 文字输出耗时(s)<br>`unsigned int delay`: 输出后等待时间(s)<br>`bool skipable`: 是否可跳过(尚未实现)<br>`bool warp`: 末尾是否换行||
 |`sayvoice`|输出文字并朗读<br>(！：仅限macOS)|`string text`: 内容<br>`unsigned int32 spend`: 文字输出耗时(s)<br>`unsigned int32 delay`: 输出后等待时间(s)<br>`bool skipable`: 是否可跳过(尚未实现)<br>`bool warp`: 末尾是否换行<br>`string actor`: 角色声音/声优名称||
+### debug
+！：仅在Debug flag为`true`时可用
+| 方法 | 描述 | 参数 | 返回 |
+| -- | -- | -- | -- |
+|`get`|获取信息|`string ${targetInfo}`: 目标信息<br>`${targetInfo}:["help","state_raw,"mem_raw","free_mem"]`|`string`: 返回信息|
+|`set`|忽略保留字设置全局变量|`string key`: 索引<br>`string value`: 值||
 ## JS 方法
 StoryScript不可以访问大部分JS方法，目前支持的部分js方法:
 * `Promise`
